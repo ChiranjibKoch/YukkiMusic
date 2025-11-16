@@ -41,7 +41,7 @@ func GenThumb(track *state.Track) string {
 	duration := track.Duration
 
 	// Fetch artwork
-	resp, err := http.Get(track.Artwork)
+	resp, err := http.Get(CleanURL(track.Artwork))
 	if err != nil {
 		gologging.ErrorF("Failed to fetch artwork: %v", err)
 		return ""
