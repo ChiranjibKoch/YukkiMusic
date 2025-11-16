@@ -1,135 +1,136 @@
 package utils
 
 import (
-	"fmt"
-	"image"
-	"image/color"
-	"image/draw"
-	"image/jpeg"
-	"image/png"
-	"io/ioutil"
-	"net/http"
-	"os"
-	"path/filepath"
+    "bytes"
+    "fmt"
+    "image"
+    "image/color"
+    "image/draw"
+    "image/jpeg"
+    "image/png"
+    "net/http"
+    "os"
+    "path/filepath"
 
-	"github.com/Laky-64/gologging"
-	"golang.org/x/image/font"
-	"golang.org/x/image/font/basicfont"
-	"golang.org/x/image/math/fixed"
-xdraw "golang.org/x/image/draw"
-	"main/internal/state"
+    "github.com/Laky-64/gologging"
+    xdraw "golang.org/x/image/draw"
+    "golang.org/x/image/font"
+    "golang.org/x/image/font/basicfont"
+    "golang.org/x/image/math/fixed"
+
+    "main/internal/state"
 )
 
 const cacheDir = "cache"
 
 func GenThumb(track *state.Track) string {
-	if track == nil || track.Artwork == "" {
-		return ""
-	}
+    if track == nil || track.Artwork == "" {
+        return ""
+    }
 
-	os.MkdirAll(cacheDir, 0o755)
+    os.MkdirAll(cacheDir, 0o755)
 
-	cachePath := filepath.Join(cacheDir, fmt.Sprintf("%s.png", track.ID))
+    cachePath := filepath.Join(cacheDir, fmt.Sprintf("%s.png", track.ID))
+    if _, err := os.Stat(cachePath); err == nil {
+        return cachePath
+    }
 
-	if _, err := os.Stat(cachePath); err == nil {
-		return cachePath
-	}
+    title := track.Title
+    artist := "Vivek"
+    duration := track.Duration
 
-	title := track.Title
-	artist := "Vivek"
-	duration := track.Duration
+    // Fetch artwork
+    resp, err := http.Get(track.Artwork)
+    if err != nil {
+        gologging.ErrorF("Failed to fetch artwork: %v", err)
+        return ""
+    }
+    defer resp.Body.Close()
 
-	resp, err := http.Get(track.Artwork)
-	if err != nil {
-		gologging.ErrorF("Failed to get artwork %v", err)
-		return ""
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != 200 {
-		gologging.ErrorF("Failed to get artwork StatusCode %d", resp.StatusCode)
+    if resp.StatusCode != http.StatusOK {
+        gologging.ErrorF("Artwork returned status %d", resp.StatusCode)
+        return ""
+    }
 
-		return ""
-	}
-	imgData, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		gologging.ErrorF("Failed to read raw image %v", err)
+    imgData, err := io.ReadAll(resp.Body)
+    if err != nil {
+        gologging.ErrorF("Failed reading artwork body: %v", err)
+        return ""
+    }
 
-		return ""
-	}
+    contentType := http.DetectContentType(imgData)
 
-	thumbPath := filepath.Join(cacheDir, fmt.Sprintf("thumb_%s.jpg", track.ID))
-	err = ioutil.WriteFile(thumbPath, imgData, 0o644)
-	if err != nil {
-		gologging.ErrorF("Failed to write raw artwork %v", err)
+    var src image.Image
 
-		return ""
-	}
+    switch contentType {
+    case "image/jpeg":
+        src, err = jpeg.Decode(bytes.NewReader(imgData))
+    case "image/png":
+        src, err = png.Decode(bytes.NewReader(imgData))
+    default:
+        gologging.ErrorF("Unsupported artwork format: %s", contentType)
+        return ""
+    }
 
-	file, err := os.Open(thumbPath)
-	if err != nil {
-		gologging.ErrorF("Failed to open thumbPath %v", err)
+    if err != nil {
+        gologging.ErrorF("Failed to decode artwork: %v", err)
+        return ""
+    }
 
-		return ""
-	}
-	defer file.Close()
-	img, err := jpeg.Decode(file)
-	if err != nil {
-		gologging.ErrorF("Failed to decode jpeg %v", err)
+    // Canvas
+    const W, H = 1920, 1080
+    base := image.NewRGBA(image.Rect(0, 0, W, H))
 
-		return ""
-	}
+    // Background color
+    bgColor := color.RGBA{18, 27, 33, 255}
+    draw.Draw(base, base.Bounds(), &image.Uniform{bgColor}, image.Point{}, draw.Src)
 
-	const W, H = 1920, 1080
-	base := image.NewRGBA(image.Rect(0, 0, W, H))
-	bgColor := color.RGBA{18, 27, 33, 255}
-	draw.Draw(base, base.Bounds(), &image.Uniform{C: bgColor}, image.Point{}, draw.Src)
+    // Wave area / bottom bar
+    waveColor := color.RGBA{28, 37, 45, 255}
+    waveRect := image.Rect(0, H-400, W, H)
+    draw.Draw(base, waveRect, &image.Uniform{waveColor}, image.Point{}, draw.Over)
 
-	waveColor := color.RGBA{28, 37, 45, 255}
-	waveRect := image.Rect(0, H-400, W, H)
-	draw.Draw(base, waveRect, &image.Uniform{C: waveColor}, image.Point{}, draw.Over)
+    // Album resized
+    album := image.NewRGBA(image.Rect(0, 0, 650, 650))
+    xdraw.CatmullRom.Scale(album, album.Bounds(), src, src.Bounds(), xdraw.Over, nil)
 
-	album := image.NewRGBA(image.Rect(0, 0, 650, 650))
-xdraw.CatmullRom.Scale(album, album.Bounds(), img, img.Bounds(), xdraw.Over, nil)
+    draw.Draw(base, image.Rect(180, 220, 830, 870), album, image.Point{}, draw.Over)
 
-	draw.Draw(base, image.Rect(180, 220, 180+650, 220+650), album, image.Point{}, draw.Over)
+    // Text drawing
+    face := basicfont.Face7x13
+    drawer := &font.Drawer{
+        Dst:  base,
+        Face: face,
+    }
 
-	face := basicfont.Face7x13
+    // Playing
+    drawer.Src = image.NewUniform(color.RGBA{185, 192, 199, 255})
+    drawer.Dot = fixed.Point26_6{X: fixed.I(900), Y: fixed.I(330)}
+    drawer.DrawString("Playing")
 
-	drawer := &font.Drawer{
-		Dst:  base,
-		Src:  image.NewUniform(color.RGBA{185, 192, 199, 255}), // light grey color
-		Face: face,
-		Dot: fixed.Point26_6{
-			X: fixed.I(900),
-			Y: fixed.I(330),
-		},
-	}
+    // Title
+    drawer.Src = image.White
+    drawer.Dot = fixed.Point26_6{X: fixed.I(900), Y: fixed.I(420)}
+    drawer.DrawString(title)
 
-	// Draw "Playing"
-	drawer.DrawString("Playing")
+    // Artist
+    drawer.Src = image.NewUniform(color.RGBA{205, 205, 205, 255})
+    drawer.Dot = fixed.Point26_6{X: fixed.I(900), Y: fixed.I(550)}
+    drawer.DrawString(artist)
 
-	// Draw the track title (white color)
-	drawer.Src = image.NewUniform(color.White)
-	drawer.Dot = fixed.Point26_6{X: fixed.I(900), Y: fixed.I(420)}
-	drawer.DrawString(title)
+    // Duration
+    drawer.Src = image.NewUniform(color.RGBA{180, 180, 180, 255})
+    drawer.Dot = fixed.Point26_6{X: fixed.I(900), Y: fixed.I(650)}
+    drawer.DrawString(fmt.Sprintf("Duration: %d", duration))
 
-	// Draw the artist name (light grey)
-	drawer.Src = image.NewUniform(color.RGBA{205, 205, 205, 255})
-	drawer.Dot = fixed.Point26_6{X: fixed.I(900), Y: fixed.I(550)}
-	drawer.DrawString(artist)
+    // Save PNG
+    outFile, err := os.Create(cachePath)
+    if err != nil {
+        return ""
+    }
+    defer outFile.Close()
 
-	// Draw the duration (grey)
-	drawer.Src = image.NewUniform(color.RGBA{180, 180, 180, 255})
-	drawer.Dot = fixed.Point26_6{X: fixed.I(900), Y: fixed.I(650)}
-	drawer.DrawString(fmt.Sprintf("Duration: %d", duration))
+    png.Encode(outFile, base)
 
-	os.Remove(thumbPath)
-	outFile, err := os.Create(cachePath)
-	if err != nil {
-		return ""
-	}
-	defer outFile.Close()
-	png.Encode(outFile, base)
-
-	return cachePath
+    return cachePath
 }
