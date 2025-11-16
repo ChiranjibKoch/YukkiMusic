@@ -16,7 +16,7 @@ import (
 	"golang.org/x/image/font"
 	"golang.org/x/image/font/basicfont"
 	"golang.org/x/image/math/fixed"
-
+xdraw "golang.org/x/image/draw"
 	"main/internal/state"
 )
 
@@ -89,7 +89,7 @@ func GenThumb(track *state.Track) string {
 	draw.Draw(base, waveRect, &image.Uniform{C: waveColor}, image.Point{}, draw.Over)
 
 	album := image.NewRGBA(image.Rect(0, 0, 650, 650))
-	draw.CatmullRom.Scale(album, album.Bounds(), img, img.Bounds(), draw.Over, nil)
+xdraw.CatmullRom.Scale(album, album.Bounds(), img, img.Bounds(), xdraw.Over, nil)
 
 	draw.Draw(base, image.Rect(180, 220, 180+650, 220+650), album, image.Point{}, draw.Over)
 
