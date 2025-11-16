@@ -32,7 +32,7 @@ type Track struct {
 	Duration int
 	Artwork  string
 	URL      string
-	BY       string
+	PlayedBY       string
 	Source   PlatformName
 }
 
