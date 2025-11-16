@@ -276,7 +276,13 @@ func handlePlay(m *telegram.NewMessage, force, cplay bool) error {
 		opt.ParseMode = "HTML"
 		opt.ReplyMarkup = btn
 		if mainTrack.Artwork != "" {
+		  thumb := utils.GenThumb(mainTrack)
+		  if thumb != ""{
+		    opt.Media = thumb
+	
+		  } else {
 			opt.Media = utils.CleanURL(mainTrack.Artwork)
+		  }
 		}
 		replyMsg, _ = utils.EOR(replyMsg, fmt.Sprintf("<b>🎵 Now Playing:</b>\n\n<b>▫ Track:</b> <a href=\"%s\">%s</a>\n<b>▫ Duration:</b> %s\n<b>▫ Requested by:</b> %s", mainTrack.URL, title, formatDuration(mainTrack.Duration), mention), &opt)
 		r.SetMystic(replyMsg)
