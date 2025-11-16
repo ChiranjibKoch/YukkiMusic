@@ -17,7 +17,6 @@ import (
     "main/internal/state"
 )
 
-var videoID string
 const cacheDir = "cache"
 
 func GenThumb(track *state.Track) string {
@@ -28,7 +27,7 @@ func GenThumb(track *state.Track) string {
 
     os.MkdirAll(cacheDir, 0755)
 
-    cachePath := filepath.Join(cacheDir, fmt.Sprintf("%s.png", videoID))
+    cachePath := filepath.Join(cacheDir, fmt.Sprintf("%s.png", track.ID))
     
     if _, err := os.Stat(cachePath); err == nil {
         return cachePath
@@ -56,7 +55,7 @@ func GenThumb(track *state.Track) string {
         return ""
     }
 
-    thumbPath := filepath.Join(cacheDir, fmt.Sprintf("thumb_%s.jpg", videoID))
+    thumbPath := filepath.Join(cacheDir, fmt.Sprintf("thumb_%s.jpg", track.ID))
     err = ioutil.WriteFile(thumbPath, imgData, 0644)
     if err != nil {
       gologging.ErrorF("Failed to write raw artwork %v", err)
