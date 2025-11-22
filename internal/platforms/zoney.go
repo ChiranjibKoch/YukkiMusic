@@ -9,7 +9,7 @@ import (
         "os"
 
         "github.com/amarnathcjd/gogram/telegram"
-        "main/internal/state"
+        "github.com/TheTeamVivek/YukkiMusic/internal/state"
 )
 
 var (
