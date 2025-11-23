@@ -103,7 +103,20 @@ func handleSkip(m *telegram.NewMessage, cplay bool) error {
 		ReplyMarkup: core.GetPlayMarkup(r, false),
 	}
 	if t.Artwork != "" {
-		opt.Media = utils.CleanURL(t.Artwork)
+		// Process thumbnail with custom overlay
+		processedThumb, err := utils.ProcessThumbnail(
+			t.Artwork,
+			t.Title,
+			utils.FormatDurationForThumbnail(t.Duration),
+		)
+		if err != nil {
+			logger.WarnF("Failed to process thumbnail, using original: %v", err)
+			opt.Media = utils.CleanURL(t.Artwork)
+		} else if processedThumb != "" {
+			opt.Media = processedThumb
+		} else {
+			opt.Media = utils.CleanURL(t.Artwork)
+		}
 	}
 
 	var newMystic *telegram.NewMessage

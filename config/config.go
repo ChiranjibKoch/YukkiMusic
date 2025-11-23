@@ -53,9 +53,11 @@ var (
 	SupportChat    = getString("SUPPORT_CHAT", "https://t.me/TheTeamVk")
 	SupportChannel = getString("SUPPORT_CHANNEL", "https://t.me/TheTeamVivek")
 	StartTime      = time.Now()
-	CookiesLink    = getString("COOKIES_LINK")
-	SetCmds        = getBool("SET_CMDS", false)
-	MaxAuthUsers   = int(getInt64("MAX_AUTH_USERS", 25))
+	CookiesLink      = getString("COOKIES_LINK")
+	SetCmds          = getBool("SET_CMDS", false)
+	MaxAuthUsers     = int(getInt64("MAX_AUTH_USERS", 25))
+	ThumbnailOverlay = getBool("THUMBNAIL_OVERLAY", true)
+	ThumbnailFont    = getString("THUMBNAIL_FONT")
 )
 
 func init() {

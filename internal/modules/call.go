@@ -93,7 +93,20 @@ func onStreamEndHandler(chatID int64, streamType ntgcalls.StreamType, streamDevi
 	}
 
 	if t.Artwork != "" {
-		opt.Media = utils.CleanURL(t.Artwork)
+		// Process thumbnail with custom overlay
+		processedThumb, err := utils.ProcessThumbnail(
+			t.Artwork,
+			t.Title,
+			utils.FormatDurationForThumbnail(t.Duration),
+		)
+		if err != nil {
+			logger.WarnF("Failed to process thumbnail, using original: %v", err)
+			opt.Media = utils.CleanURL(t.Artwork)
+		} else if processedThumb != "" {
+			opt.Media = processedThumb
+		} else {
+			opt.Media = utils.CleanURL(t.Artwork)
+		}
 	}
 
 	mystic, _ = utils.EOR(mystic, msgText, opt)
