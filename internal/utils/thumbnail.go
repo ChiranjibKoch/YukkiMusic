@@ -43,6 +43,16 @@ import (
 var thumbnailCache = NewCache[string, string](30 * time.Minute)
 var logger = gologging.GetLogger("Thumbnail")
 
+// Common font paths for different systems
+var defaultFontPaths = []string{
+	"/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",        // Debian/Ubuntu
+	"/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",             // Debian/Ubuntu
+	"/usr/share/fonts/dejavu/DejaVuSans-Bold.ttf",                 // Fedora/RHEL
+	"/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf", // Alternative
+	"/System/Library/Fonts/Helvetica.ttc",                         // macOS
+	"/usr/share/fonts/truetype/ubuntu/Ubuntu-Bold.ttf",            // Ubuntu
+}
+
 // ThumbnailConfig holds configuration for thumbnail customization
 type ThumbnailConfig struct {
 	AddOverlay      bool
@@ -150,6 +160,29 @@ func downloadImage(url string) (image.Image, error) {
 	return img, nil
 }
 
+// loadFont attempts to load a font, trying custom path first, then default paths
+func loadFont(dc *gg.Context, fontSize float64) error {
+	// Try custom font first
+	customFont := config.ThumbnailFont
+	if customFont != "" && fileExists(customFont) {
+		if err := dc.LoadFontFace(customFont, fontSize); err == nil {
+			return nil
+		}
+		logger.WarnF("Failed to load custom font %s: trying defaults", customFont)
+	}
+
+	// Try default system fonts
+	for _, fontPath := range defaultFontPaths {
+		if fileExists(fontPath) {
+			if err := dc.LoadFontFace(fontPath, fontSize); err == nil {
+				return nil
+			}
+		}
+	}
+
+	return fmt.Errorf("no suitable font found")
+}
+
 // addOverlay adds text overlay to the thumbnail
 func addOverlay(img image.Image, cfg *ThumbnailConfig) (image.Image, error) {
 	// Resize image if needed
@@ -180,23 +213,10 @@ func addOverlay(img image.Image, cfg *ThumbnailConfig) (image.Image, error) {
 	titleFontSize := float64(width) / 25.0
 	durationFontSize := float64(width) / 35.0
 
-	// Load font (use default font if custom not available)
-	fontPath := config.ThumbnailFont
-	if fontPath == "" || !fileExists(fontPath) {
-		// Try to use built-in system font
-		if err := dc.LoadFontFace("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", titleFontSize); err != nil {
-			// Font loading failed, skip overlay
-			logger.WarnF("Failed to load font, returning original image: %v", err)
-			return img, nil
-		}
-	} else {
-		if err := dc.LoadFontFace(fontPath, titleFontSize); err != nil {
-			logger.WarnF("Failed to load custom font, trying default: %v", err)
-			if err := dc.LoadFontFace("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", titleFontSize); err != nil {
-				logger.WarnF("Failed to load font, returning original image: %v", err)
-				return img, nil
-			}
-		}
+	// Load font for title
+	if err := loadFont(dc, titleFontSize); err != nil {
+		logger.WarnF("Failed to load font, returning original image: %v", err)
+		return img, nil
 	}
 
 	// Draw title text
@@ -217,31 +237,17 @@ func addOverlay(img image.Image, cfg *ThumbnailConfig) (image.Image, error) {
 
 	// Draw duration text
 	if cfg.DurationText != "" {
-		if fontPath == "" || !fileExists(fontPath) {
-			if err := dc.LoadFontFace("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", durationFontSize); err != nil {
-				// Font loading failed, skip duration text
-				logger.WarnF("Failed to load font for duration: %v", err)
-			} else {
-				dc.SetColor(color.RGBA{0, 0, 0, 200}) // Shadow
-				x := float64(width) - 20
-				y := float64(height) - 20
-				dc.DrawStringAnchored(cfg.DurationText, x+1, y+1, 1.0, 1.0)
-
-				dc.SetColor(color.RGBA{255, 255, 255, 255}) // Main text
-				dc.DrawStringAnchored(cfg.DurationText, x, y, 1.0, 1.0)
-			}
+		// Load font for duration
+		if err := loadFont(dc, durationFontSize); err != nil {
+			logger.WarnF("Failed to load font for duration: %v", err)
 		} else {
-			if err := dc.LoadFontFace(fontPath, durationFontSize); err != nil {
-				logger.WarnF("Failed to load custom font for duration: %v", err)
-			} else {
-				dc.SetColor(color.RGBA{0, 0, 0, 200}) // Shadow
-				x := float64(width) - 20
-				y := float64(height) - 20
-				dc.DrawStringAnchored(cfg.DurationText, x+1, y+1, 1.0, 1.0)
+			dc.SetColor(color.RGBA{0, 0, 0, 200}) // Shadow
+			x := float64(width) - 20
+			y := float64(height) - 20
+			dc.DrawStringAnchored(cfg.DurationText, x+1, y+1, 1.0, 1.0)
 
-				dc.SetColor(color.RGBA{255, 255, 255, 255}) // Main text
-				dc.DrawStringAnchored(cfg.DurationText, x, y, 1.0, 1.0)
-			}
+			dc.SetColor(color.RGBA{255, 255, 255, 255}) // Main text
+			dc.DrawStringAnchored(cfg.DurationText, x, y, 1.0, 1.0)
 		}
 	}
 
@@ -326,7 +332,7 @@ func saveImage(img image.Image, path string, quality int) error {
 func generateOutputPath() string {
 	timestamp := time.Now().UnixNano()
 	filename := fmt.Sprintf("thumb_%d.jpg", timestamp)
-	return filepath.Join("/tmp", "yukki_thumbnails", filename)
+	return filepath.Join(os.TempDir(), "yukki_thumbnails", filename)
 }
 
 // fileExists checks if a file exists
@@ -337,7 +343,7 @@ func fileExists(path string) bool {
 
 // CleanupOldThumbnails removes old thumbnail files
 func CleanupOldThumbnails() {
-	dir := filepath.Join("/tmp", "yukki_thumbnails")
+	dir := filepath.Join(os.TempDir(), "yukki_thumbnails")
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		return
 	}

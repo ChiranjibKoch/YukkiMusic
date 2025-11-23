@@ -132,6 +132,20 @@ To use a custom font on your VPS:
 
 ### Finding System Fonts
 
+YukkiMusic automatically searches for fonts in common locations on different systems. If no custom font is specified, it will try these paths in order:
+
+**Linux (Debian/Ubuntu):**
+- `/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf`
+- `/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf`
+- `/usr/share/fonts/truetype/ubuntu/Ubuntu-Bold.ttf`
+
+**Linux (Fedora/RHEL/CentOS):**
+- `/usr/share/fonts/dejavu/DejaVuSans-Bold.ttf`
+- `/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf`
+
+**macOS:**
+- `/System/Library/Fonts/Helvetica.ttc`
+
 To list available system fonts on Linux:
 ```bash
 fc-list | grep -i ttf
@@ -162,7 +176,9 @@ Common font locations:
 
 ### Storage & Cleanup
 
-- **Temporary Location:** `/tmp/yukki_thumbnails/`
+- **Temporary Location:** System temp directory (platform-specific)
+  - Linux/macOS: `/tmp/yukki_thumbnails/`
+  - Windows: `%TEMP%\yukki_thumbnails\`
 - **Filename Format:** `thumb_<timestamp>.jpg`
 - **Cleanup Interval:** Every 30 minutes
 - **Cache Retention:** Files older than 1 hour are automatically deleted
@@ -173,8 +189,9 @@ Common font locations:
 
 **Solution:**
 1. Check that `THUMBNAIL_OVERLAY=true` in your `.env`
-2. Ensure the bot has write permissions to `/tmp`
+2. Ensure the bot has write permissions to system temp directory
 3. Check logs for font loading errors
+4. Verify that at least one system font is available on your system
 
 ### Issue: Custom font not working
 
