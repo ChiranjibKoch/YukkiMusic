@@ -224,7 +224,7 @@ func addOverlay(img image.Image, cfg *ThumbnailConfig) (image.Image, error) {
 		// Wrap text if too long
 		maxWidth := float64(width) * 0.9
 		wrappedTitle := wrapText(dc, cfg.TitleText, maxWidth)
-		
+
 		// Draw text with shadow for better visibility
 		dc.SetColor(color.RGBA{0, 0, 0, 200}) // Shadow
 		x := float64(width) / 2
