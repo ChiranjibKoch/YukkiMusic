@@ -252,7 +252,20 @@ func handlePlay(m *telegram.NewMessage, force, cplay bool) error {
 		opt.ParseMode = "HTML"
 		opt.ReplyMarkup = btn
 		if mainTrack.Artwork != "" {
-			opt.Media = utils.CleanURL(mainTrack.Artwork)
+			// Process thumbnail with custom overlay
+			processedThumb, err := utils.ProcessThumbnail(
+				mainTrack.Artwork,
+				mainTrack.Title,
+				utils.FormatDurationForThumbnail(mainTrack.Duration),
+			)
+			if err != nil {
+				logger.WarnF("Failed to process thumbnail, using original: %v", err)
+				opt.Media = utils.CleanURL(mainTrack.Artwork)
+			} else if processedThumb != "" {
+				opt.Media = processedThumb
+			} else {
+				opt.Media = utils.CleanURL(mainTrack.Artwork)
+			}
 		}
 		replyMsg, _ = utils.EOR(replyMsg, fmt.Sprintf("<b>🎵 Now Playing:</b>\n\n<b>▫ Track:</b> <a href=\"%s\">%s</a>\n<b>▫ Duration:</b> %s\n<b>▫ Requested by:</b> %s", mainTrack.URL, title, formatDuration(mainTrack.Duration), mention), opt)
 		r.SetMystic(replyMsg)
@@ -273,7 +286,20 @@ func handlePlay(m *telegram.NewMessage, force, cplay bool) error {
 			opt.ParseMode = "HTML"
 			opt.ReplyMarkup = btn
 			if mainTrack.Artwork != "" {
-				opt.Media = utils.CleanURL(mainTrack.Artwork)
+				// Process thumbnail with custom overlay
+				processedThumb, err := utils.ProcessThumbnail(
+					mainTrack.Artwork,
+					mainTrack.Title,
+					utils.FormatDurationForThumbnail(mainTrack.Duration),
+				)
+				if err != nil {
+					logger.WarnF("Failed to process thumbnail, using original: %v", err)
+					opt.Media = utils.CleanURL(mainTrack.Artwork)
+				} else if processedThumb != "" {
+					opt.Media = processedThumb
+				} else {
+					opt.Media = utils.CleanURL(mainTrack.Artwork)
+				}
 			}
 			replyMsg, _ = utils.EOR(replyMsg, fmt.Sprintf("<b>🎵 Added to Queue:</b>\n\n<b>▫ Track:</b> <a href=\"%s\">%s</a>\n<b>▫ Duration:</b> %s\n<b>▫ Requested by:</b> %s", mainTrack.URL, title, formatDuration(mainTrack.Duration), mention), opt)
 		} else {

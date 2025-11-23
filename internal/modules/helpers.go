@@ -141,7 +141,17 @@ func sendPlayLogs(m *telegram.NewMessage, track *state.Track, queued bool) {
 	if track.Artwork != "" {
 
 		sb.WriteString("\n</blockquote>")
-		_, err = core.Bot.SendMedia(config.LoggerID, utils.CleanURL(track.Artwork), &telegram.MediaOptions{Caption: sb.String()})
+		// Process thumbnail with custom overlay
+		processedThumb, err := utils.ProcessThumbnail(
+			track.Artwork,
+			track.Title,
+			utils.FormatDurationForThumbnail(track.Duration),
+		)
+		if err != nil || processedThumb == "" {
+			_, err = core.Bot.SendMedia(config.LoggerID, utils.CleanURL(track.Artwork), &telegram.MediaOptions{Caption: sb.String()})
+		} else {
+			_, err = core.Bot.SendMedia(config.LoggerID, processedThumb, &telegram.MediaOptions{Caption: sb.String()})
+		}
 	} else {
 		_, err = core.Bot.SendMessage(config.LoggerID, sb.String())
 	}

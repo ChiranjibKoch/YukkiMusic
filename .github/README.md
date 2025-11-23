@@ -27,6 +27,7 @@
 - 🛡️ **Admin Tools:** Secure command access for group administrators.  
 - ⚙️ **Fully Configurable:** Customize everything through environment variables.  
 - 🪶 **Lightweight & Efficient:** Designed for performance even under heavy use.
+- 🎨 **Custom Thumbnails:** Automatically overlay song title and duration on thumbnails. [Learn more](../THUMBNAIL_CUSTOMIZATION.md)
 
 > [!NOTE]  
 > 🔸 **Video playback is not supported.**  
@@ -123,6 +124,8 @@ All settings are managed using a `.env` file or environment variables.
 | `COOKIES_LINK` | The [batbin.me](https://batbin.me) link where you pasted your `yt-dlp` cookies file. If you are using the Fallen API, you can leave this empty. You can also skip this if you manually place your cookies `.txt` file in `internal/cookies/`. | *(empty)* |
 | `SET_CMDS` | Set [bot commands](https://raw.githubusercontent.com/Vivekkumar-IN/assets/refs/heads/master/bot_commands.png) automatically on startup. | `false` |
 | `MAX_AUTH_USERS` | Max number of authorized users per chat. | `25` |
+| `THUMBNAIL_OVERLAY` | Enable custom thumbnail overlay with title and duration. See [Thumbnail Customization Guide](../THUMBNAIL_CUSTOMIZATION.md) for details. | `true` |
+| `THUMBNAIL_FONT` | Path to custom TrueType font for thumbnail text. Uses system default if empty. | *(empty)* |
 
 ---
 ## 💬 Commands

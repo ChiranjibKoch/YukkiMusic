@@ -33,6 +33,8 @@ package main
 import "C"
 
 import (
+	"time"
+
 	"github.com/Laky-64/gologging"
 
 	"github.com/TheTeamVivek/YukkiMusic/config"
@@ -40,6 +42,7 @@ import (
 	"github.com/TheTeamVivek/YukkiMusic/internal/core"
 	"github.com/TheTeamVivek/YukkiMusic/internal/database"
 	"github.com/TheTeamVivek/YukkiMusic/internal/modules"
+	"github.com/TheTeamVivek/YukkiMusic/internal/utils"
 )
 
 func main() {
@@ -57,6 +60,15 @@ func main() {
 
 	l.Debug("🔹 Initializing cookies...")
 	cookies.Init()
+
+	// Start thumbnail cleanup routine
+	go func() {
+		ticker := time.NewTicker(30 * time.Minute)
+		defer ticker.Stop()
+		for range ticker.C {
+			utils.CleanupOldThumbnails()
+		}
+	}()
 
 	l.Debug("🔹 Initializing clients...")
 	cleanup := core.Init(config.ApiID, config.ApiHash, config.Token, config.StringSession, config.LoggerID)

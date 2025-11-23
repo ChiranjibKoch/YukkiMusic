@@ -298,7 +298,20 @@ func roomHandle(cb *telegram.CallbackQuery) error {
 		}
 
 		if track.Artwork != "" {
-			optSend.Media = utils.CleanURL(track.Artwork)
+			// Process thumbnail with custom overlay
+			processedThumb, err := utils.ProcessThumbnail(
+				track.Artwork,
+				track.Title,
+				utils.FormatDurationForThumbnail(track.Duration),
+			)
+			if err != nil {
+				logger.WarnF("Failed to process thumbnail, using original: %v", err)
+				optSend.Media = utils.CleanURL(track.Artwork)
+			} else if processedThumb != "" {
+				optSend.Media = processedThumb
+			} else {
+				optSend.Media = utils.CleanURL(track.Artwork)
+			}
 		}
 
 		mystic, _ = utils.EOR(mystic, msgText, *optSend)
@@ -419,7 +432,20 @@ func roomHandle(cb *telegram.CallbackQuery) error {
 		}
 
 		if t.Artwork != "" {
-			opt.Media = utils.CleanURL(t.Artwork)
+			// Process thumbnail with custom overlay
+			processedThumb, err := utils.ProcessThumbnail(
+				t.Artwork,
+				t.Title,
+				utils.FormatDurationForThumbnail(t.Duration),
+			)
+			if err != nil {
+				logger.WarnF("Failed to process thumbnail, using original: %v", err)
+				opt.Media = utils.CleanURL(t.Artwork)
+			} else if processedThumb != "" {
+				opt.Media = processedThumb
+			} else {
+				opt.Media = utils.CleanURL(t.Artwork)
+			}
 		}
 
 		mystic, _ = utils.EOR(mystic, msgText, *opt)
