@@ -70,7 +70,7 @@ func (a *ArchTubePlatform) CanGetTracks(query string) bool {
 	if config.ArchTubeAPIURL == "" || config.ArchTubeAPIKey == "" {
 		return false
 	}
-	return !isYouTubeURL(query)
+	return !youtubeLinkRegex.MatchString(query)
 }
 
 func (a *ArchTubePlatform) GetTracks(
@@ -105,12 +105,11 @@ func (a *ArchTubePlatform) GetTracks(
 	tracks := make([]*state.Track, 0, len(results))
 	for _, item := range results {
 		tracks = append(tracks, &state.Track{
-			Name:     item.Title,
+			Title:    item.Title,
 			URL:      item.URL,
 			Duration: item.Duration,
-			Thumb:    item.Thumb,
-			By:       item.Author,
-			Platform: PlatformArchTube,
+			Artwork:  item.Thumb,
+			Source:   PlatformArchTube,
 		})
 	}
 	return tracks, nil
