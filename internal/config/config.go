@@ -44,8 +44,8 @@ var (
 	OwnerID             int64
 	SpotifyClientID     string
 	SpotifyClientSecret string
-	FallenAPIURL        string
-	FallenAPIKey        string
+	ArchTubeAPIURL      string
+	ArchTubeAPIKey      string
 	DefaultLang         string
 	DurationLimit       int
 	LeaveOnDemoted      bool
@@ -121,8 +121,8 @@ func loadConfig() {
 	OwnerID = getInt64("OWNER_ID", 0)
 	SpotifyClientID = getString("SPOTIFY_CLIENT_ID", "")
 	SpotifyClientSecret = getString("SPOTIFY_CLIENT_SECRET", "")
-	FallenAPIURL = getString("FALLEN_API_URL", "https://beta.fallenapi.fun")
-	FallenAPIKey = getString("FALLEN_API_KEY", "")
+	ArchTubeAPIURL = getString("ARCHTUBE_API_URL", "")
+	ArchTubeAPIKey = getString("ARCHTUBE_API_KEY", "")
 	DefaultLang = getString("DEFAULT_LANG", "en")
 	DurationLimit = int(getInt64("DURATION_LIMIT", 4200))
 	LeaveOnDemoted = getBool("LEAVE_ON_DEMOTED", false)
@@ -198,6 +198,10 @@ func validateConfig() error {
 
 	if SpotifyClientID == "" || SpotifyClientSecret == "" {
 		logger.Warn("Spotify credentials not configured — Spotify links won't work")
+	}
+
+	if (ArchTubeAPIURL == "") != (ArchTubeAPIKey == "") {
+		logger.Warn("ArchTube partially configured — both ARCHTUBE_API_URL and ARCHTUBE_API_KEY are required; platform will be disabled")
 	}
 
 	return nil
